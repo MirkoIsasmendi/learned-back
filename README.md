@@ -3,10 +3,10 @@
 
 ## Explicacion learned
 ### ¿Que es learned?
-Learned es un programa creado para generar una interaccion facilitada entre alumnos y profesores, para las clases.
+Learned es un programa creado para poder facilitar la interaccion entre alumnos y profesores en el ambiente de clases.
 
 ### ¿Que diferencia a learned de otros programas?
-Learned a diferencia de otros programas fue ya creado con la idea de ser una aplicacion para escuelas, Por lo que tiene atencion maxima a los detalles para que sea user friendly.
+Learned a diferencia de otros programas fue ya creado con la idea de ser una aplicacion para escuelas, Por lo que tiene maxima atencion a los detalles para que sea user friendly.
 Ademas de eso presenta muchas opciones para mejorar la experiencia de usuario.
 
 ### ¿De donde surgio learned?
@@ -27,7 +27,7 @@ Bueno mas alla de poder monetizar cosas cosmeticas learned podria dar la opcion 
 ### Explicación base de datos:
 
 La base de datos se realizo por la necesidad de almacenar cuentas y tareas para la aplicación, Ya que sin la base de datos esta tendría muchas limitaciones y no podría ser realizado.
-El enfoque de la base de datos fue realizado a la mejor comunicación de la misma con las tablas relacionales para evitar tiempos elevados en las peticiones de información.
+El enfoque de la base de datos fue dado a la mejor comunicación de la misma con las tablas relacionales para evitar tiempos elevados en las peticiones de información.
 
 ### Descripción de base de datos:
 
@@ -60,7 +60,7 @@ El backend esta en busca la optimización masiva de las peticiones de la base de
 
 ### Tecnologías implementadas:
 
-Actualmente para la versión de prueba no se están prestando atención a las tecnologías utilizadas pero se esta trabajando con lo siguiente
+Actualmente para la versión de prueba no se está prestando atención a las tecnologías utilizadas pero se esta trabajando con lo siguiente
 
 - Python
 - flask
