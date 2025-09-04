@@ -70,7 +70,9 @@ Actualmente para la versión de prueba no se están prestando atención a las te
 ## Utilizacion del backend
 
 La base de datos actualmente va con sql dentro de una carpeta que se debe crear y el orden quedaria asi
-`rot//:db/app.db`
+```
+rot//:db/app.db
+```
 
 Tambien hace falta instalar las siguientes librerias
 ```
@@ -80,7 +82,9 @@ pip install bcrypt
 ```
 
 Luego Para iniciar el backend se debe ejecutar el siguiente comando
-`python app.py`
+```
+python app.py
+```
 
 y listo ya tendras el backend funcionando
 
