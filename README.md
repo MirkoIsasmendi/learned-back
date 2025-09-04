@@ -22,14 +22,14 @@ Bueno mas alla de poder monetizar cosas cosmeticas learned podria dar la opcion 
 - Santino Micheli
 - Bautista Ithurat
 
-# Descripcion del backend y base de datos
+## Descripcion del backend y base de datos
 
-## Explicación base de datos:
+### Explicación base de datos:
 
 La base de datos se realizo por la necesidad de almacenar cuentas y tareas para la aplicación, Ya que sin la base de datos esta tendría muchas limitaciones y no podría ser realizado.
 El enfoque de la base de datos fue realizado a la mejor comunicación de la misma con las tablas relacionales para evitar tiempos elevados en las peticiones de información.
 
-## Descripción de base de datos:
+### Descripción de base de datos:
 
 Nombre de la base de datos: Learned DB
 
@@ -40,11 +40,11 @@ Problema que resuelve: El problema que resuelve es el echo de poder almacenar ta
 Información que almacena:
 Información de cuenta, Tareas, Clases, relaciones entre usuarios y clases, además de muchas otras relaciones y datos importantes para la utilización de la aplicación.
 
-## Descripción de backend:
+### Descripción de backend:
 
 El backend busca la mayor optimización en peticiones con la mejor funcionalidad y seguridad posible desde el aprendizaje que hemos tenido estos años.
 
-## El backend busca las siguiente funcionalidades:
+### El backend busca las siguiente funcionalidades:
 
 - Cuentas obligatorias, Login y Register (cuentas con roles ej: Profesor, Alumno, Admin).
 - Notificaciones de usuarios (invitaciones, Tareas nuevas, Tareas atrasadas).
@@ -54,11 +54,11 @@ El backend busca la mayor optimización en peticiones con la mejor funcionalidad
 - Chat de mensajería en vivo para la clase.
 - Configuración de cuenta y de clase para mayor customización de todo.
 
-## Optimizaciones que busca el backend:
+### Optimizaciones que busca el backend:
 
 El backend esta en busca la optimización masiva de las peticiones de la base de datos y procesos de la programación es decir si una petición tarda demasiado por tener en cuenta la mayor cantidad de cosas se va a buscar como optimizarlo reduciendo condiciones ya sea agregando nuevas tablas o sacando condicionales innecesarios que solo retrasan la utilización, Además de eso se va a tener en cuenta cosas como que a la hora de encriptar no se tarde demasiado para poder reducir los tiempos de espera
 
-## Tecnologías implementadas:
+### Tecnologías implementadas:
 
 Actualmente para la versión de prueba no se están prestando atención a las tecnologías utilizadas pero se esta trabajando con lo siguiente
 
@@ -67,7 +67,7 @@ Actualmente para la versión de prueba no se están prestando atención a las te
 - cors
 - bcrypt
 
-## Utilizacion del backend
+### Utilizacion del backend
 
 La base de datos actualmente va con sql dentro de una carpeta que se debe crear y el orden quedaria asi
 ```
