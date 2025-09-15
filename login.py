@@ -1,5 +1,6 @@
+import bcrypt
 import re
-from db import login, register_alum, register_prof
+from usuarios import login_usuario, registrar_usuario
 
 def comp_login(password, mail):
     resultado_pass = validar_password(password)
@@ -10,7 +11,7 @@ def comp_login(password, mail):
     if not resultado_mail[0]:
         return resultado_mail[1]
 
-    return login(mail, password)
+    return login_usuario(mail, password)
 
 def comp_reg_alum(nombre, password, mail):
     resultado_nombre = validar_nombre(nombre)
@@ -25,7 +26,8 @@ def comp_reg_alum(nombre, password, mail):
     if not resultado_mail[0]:
         return resultado_mail[1]
 
-    return register_alum(nombre.strip(), mail.strip())
+    hashed_password = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
+    return registrar_usuario(nombre.strip(), mail.strip(), hashed_password, "estudiante")
 
 def comp_reg_prof(nombre, password, mail):
     resultado_nombre = validar_nombre(nombre)
@@ -41,7 +43,7 @@ def comp_reg_prof(nombre, password, mail):
         return resultado_mail[1]
 
     hashed_password = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
-    return register_prof(nombre.strip(), mail.strip(), hashed_password)
+    return registrar_usuario(nombre.strip(), mail.strip(), hashed_password, "profesor")
 
 def validar_password(password):
     if not password or len(password) < 8:

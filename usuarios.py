@@ -1,4 +1,3 @@
-
 from db import conectar, random_id
 from datetime import datetime
 import bcrypt
