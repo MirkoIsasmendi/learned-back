@@ -195,6 +195,27 @@ def obtener_trabajos_por_clase(clase_id, alumno_id):
 
     return jsonify(tareas)
 
+@app.route("/api/trabajos/<clase_id>", methods=["POST"])
+def crear_trabajo(clase_id):
+    body = request.json
+    required = ["titulo", "descripcion"]
+
+    if not all(k in body for k in required):
+        return jsonify({"error": "Faltan campos obligatorios"}), 400
+
+    trabajo_id = random_id("trabajos")
+
+    conn = conectar()
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO trabajos (id, titulo, descripcion, clase_id)
+        VALUES (?, ?, ?, ?)
+    """, (trabajo_id, body["titulo"], body["descripcion"], clase_id))
+    conn.commit()
+    conn.close()
+
+    return jsonify({"status": "ok", "trabajo_id": trabajo_id})
+
 @app.route("/api/clases/<clase_id>/usuarios")
 def obtener_usuarios_de_clase(clase_id):
     conn = conectar()

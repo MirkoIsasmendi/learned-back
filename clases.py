@@ -4,7 +4,7 @@ from datetime import datetime
 def crear_clases(nombre, descripcion, profesor_id):
     conn = conectar()
     cursor = conn.cursor()
-    clase_id = "clasetest"  # Puedes cambiar esto por random_id("clases") si lo deseas
+    clase_id = random_id("clases")
     creada_en = datetime.now().isoformat()
     cursor.execute("""
         INSERT INTO clases (id, nombre, descripcion, profesor_id, creado_en)
