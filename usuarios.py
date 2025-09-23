@@ -38,3 +38,21 @@ def login_usuario(email, password):
     if usuario and bcrypt.checkpw(password.encode(), usuario[3]):
         return usuario[:3]
     return None
+
+def obtener_usuario_por_id(usuario_id):
+    conn = conectar()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT id, nombre, email, rol, creado_en FROM usuarios WHERE id = ?
+    """, (usuario_id,))
+    usuario = cursor.fetchone()
+    conn.close()
+    if usuario:
+        return {
+            "id": usuario[0],
+            "nombre": usuario[1],
+            "email": usuario[2],
+            "rol": usuario[3],
+            "creado_en": usuario[4]
+        }
+    return None

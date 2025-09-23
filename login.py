@@ -11,7 +11,10 @@ def comp_login(password, mail):
     if not resultado_mail[0]:
         return resultado_mail[1]
 
-    return login_usuario(mail, password)
+    usuario = login_usuario(mail, password)
+    if usuario:
+        return {"id": usuario[0], "nombre": usuario[1], "rol": usuario[2]}
+    return None
 
 def comp_reg_alum(nombre, password, mail):
     resultado_nombre = validar_nombre(nombre)
@@ -26,8 +29,7 @@ def comp_reg_alum(nombre, password, mail):
     if not resultado_mail[0]:
         return resultado_mail[1]
 
-    hashed_password = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
-    return registrar_usuario(nombre.strip(), mail.strip(), hashed_password, "estudiante")
+    return registrar_usuario(nombre.strip(), mail.strip(), password, "estudiante")
 
 def comp_reg_prof(nombre, password, mail):
     resultado_nombre = validar_nombre(nombre)
@@ -42,8 +44,7 @@ def comp_reg_prof(nombre, password, mail):
     if not resultado_mail[0]:
         return resultado_mail[1]
 
-    hashed_password = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
-    return registrar_usuario(nombre.strip(), mail.strip(), hashed_password, "profesor")
+    return registrar_usuario(nombre.strip(), mail.strip(), password, "profesor")
 
 def validar_password(password):
     if not password or len(password) < 8:

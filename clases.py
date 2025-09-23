@@ -1,5 +1,6 @@
 from db import conectar, random_id
 from datetime import datetime
+from usuarios import obtener_usuario_por_id
 
 def crear_clases(nombre, descripcion, profesor_id):
     conn = conectar()

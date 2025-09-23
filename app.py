@@ -3,8 +3,12 @@ from flask_cors import CORS
 from notificaciones import crear_tablas, crear_notificacion, asignar_a_usuario, marcar_vista, listar_por_usuario
 from clases import crear_clases, unirse_clase, clases_por_usuario
 from db import random_id, conectar
-from usuarios import registrar_usuario, login_usuario
+from usuarios import obtener_usuario_por_id
 from login import comp_login, comp_reg_alum, comp_reg_prof
+import jwt
+import datetime
+
+SECRET_KEY = "A99GJFJKSLKJi129873@#$$%&&/()=?¿"
 
 app = Flask(__name__)
 CORS(app)
@@ -277,13 +281,34 @@ def login():
     required = ["email", "password"]
     if not all(k in body for k in required):
         return jsonify({"error": "Faltan campos obligatorios"}), 400
-    resultado = comp_login(body["password"], body["email"])
-    if isinstance(resultado, str):
-        return jsonify({"error": resultado}), 400
-    if resultado:
-        return jsonify({"status": "ok", "usuario": resultado})
-    else:
+    
+    usuario = comp_login(body["password"], body["email"])
+    if isinstance(usuario, str):  
+        # Error de validación
+        return jsonify({"error": usuario}), 400
+    if not usuario:
         return jsonify({"error": "Credenciales incorrectas"}), 401
+
+    token = jwt.encode({
+        "usuario_id": usuario["id"],
+        "rol": usuario["rol"],
+        "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=2)
+    }, SECRET_KEY, algorithm="HS256")
+
+    return jsonify({
+        "status": "ok",
+        "usuario": usuario,
+        "token": token
+    })
+
+
+@app.route("/api/usuarios/<usuario_id>", methods=["GET"])
+def obtener_usuario(usuario_id):
+    usuario = obtener_usuario_por_id(usuario_id)
+    if usuario:
+        return jsonify({"status": "ok", "usuario": usuario})
+    else:
+        return jsonify({"error": "Usuario no encontrado"}), 404
 
 if __name__ == "__main__":
     app.run(debug=True)
