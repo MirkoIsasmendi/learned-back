@@ -6,7 +6,6 @@ import bcrypt
 def hash_password(password):
     return bcrypt.hashpw(password.encode(), bcrypt.gensalt())
 
-
 def registrar_usuario(nombre, email, password, rol):
     conn = conectar()
     cursor = conn.cursor()
@@ -22,7 +21,8 @@ def registrar_usuario(nombre, email, password, rol):
         return usuario_id
     except Exception as e:
         conn.rollback()
-        raise e
+        print("Error al registrar usuario:", e)
+        return None  # ← devolvemos None en lugar de lanzar excepción
     finally:
         conn.close()
 

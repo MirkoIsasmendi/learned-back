@@ -254,11 +254,12 @@ def register_profesor():
     required = ["nombre", "email", "password"]
     if not all(k in body for k in required):
         return jsonify({"error": "Faltan campos obligatorios"}), 400
-    resultado = comp_reg_prof(body["nombre"], body["password"], body["email"])
-    if isinstance(resultado, str):
-        # Si retorna un string, es un error
-        return jsonify({"error": resultado}), 400
-    return jsonify({"status": "ok", "usuario_id": resultado, "rol": "profesor"})
+
+    try:
+        resultado = comp_reg_prof(body["nombre"], body["password"], body["email"])
+        return jsonify({"status": "ok", "usuario_id": resultado, "rol": "profesor"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
 
 
 # Registro de alumno con validaciones
@@ -268,11 +269,12 @@ def register_alumno():
     required = ["nombre", "email", "password"]
     if not all(k in body for k in required):
         return jsonify({"error": "Faltan campos obligatorios"}), 400
-    resultado = comp_reg_alum(body["nombre"], body["password"], body["email"])
-    if isinstance(resultado, str):
-        return jsonify({"error": resultado}), 400
-    return jsonify({"status": "ok", "usuario_id": resultado, "rol": "estudiante"})
 
+    resultado = comp_reg_alum(body["nombre"], body["password"], body["email"])
+    if resultado is None:
+        return jsonify({"error": "No se pudo registrar el usuario"}), 500
+
+    return jsonify({"status": "ok", "usuario_id": resultado, "rol": "estudiante"})
 
 # Login con validaciones
 @app.route("/api/login", methods=["POST"])
@@ -292,7 +294,7 @@ def login():
     token = jwt.encode({
         "usuario_id": usuario["id"],
         "rol": usuario["rol"],
-        "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=2)
+        "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=36000)
     }, SECRET_KEY, algorithm="HS256")
 
     return jsonify({
