@@ -5,8 +5,8 @@ from clases import crear_clases, unirse_clase, clases_por_usuario
 from db import random_id, conectar
 from usuarios import obtener_usuario_por_id
 from login import comp_login, comp_reg_alum, comp_reg_prof
+from datetime import datetime, timedelta, timezone
 import jwt
-import datetime
 
 SECRET_KEY = "A99GJFJKSLKJi129873@#$$%&&/()=?¿"
 
@@ -294,7 +294,7 @@ def login():
     token = jwt.encode({
         "usuario_id": usuario["id"],
         "rol": usuario["rol"],
-        "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=36000)
+        "exp": datetime.now(timezone.utc) + timedelta(hours=36000)
     }, SECRET_KEY, algorithm="HS256")
 
     return jsonify({
