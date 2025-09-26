@@ -6,6 +6,7 @@ from db import random_id, conectar
 from usuarios import obtener_usuario_por_id
 from login import comp_login, comp_reg_alum, comp_reg_prof
 from datetime import datetime, timedelta, timezone
+import traceback
 import jwt
 
 SECRET_KEY = "A99GJFJKSLKJi129873@#$$%&&/()=?¿"
@@ -222,30 +223,36 @@ def crear_trabajo(clase_id):
 
 @app.route("/api/clases/<clase_id>/usuarios")
 def obtener_usuarios_de_clase(clase_id):
-    conn = conectar()
-    cursor = conn.cursor()
+    try:
+        print("DEBUG: obtener_usuarios_de_clase llamado con clase_id:", clase_id)
+        conn = conectar()
+        cursor = conn.cursor()
 
-    cursor.execute("""
-        SELECT u.id, u.nombre, u.estado
-        FROM usuarios u
-        JOIN clases_usuarios cu ON cu.usuario_id = u.id
-        WHERE cu.clase_id = ?
-    """, (clase_id,))
-    
-    usuarios = cursor.fetchall()
-    conn.close()
+        cursor.execute("""
+            SELECT u.id, u.nombre
+            FROM usuarios u
+            JOIN participaciones p ON p.usuario_id = u.id
+            WHERE p.clase_id = ?
+        """, (clase_id,))
+        
+        filas = cursor.fetchall()
+        conn.close()
 
-    usuarios_con_foto = []
-    for i, u in enumerate(usuarios):
-        usuarios_con_foto.append({
-            "id": u[0],
-            "nombre": u[1],
-            "estado": u[2],
-            "foto": f"`https://tse1.mm.bing.net/th/id/OIP.mV1jXnbl-N9OGjpKzIVGzwHaHk?pid=Api&P=0&h=180`"
-        })
+        usuarios_con_foto = []
+        for i, u in enumerate(filas):
+            usuarios_con_foto.append({
+                "id": u[0],
+                "nombre": u[1],
+                "estado": "desconectado",   # valor por defecto; adaptá si querés otro comportamiento
+                "foto": "https://static.vecteezy.com/system/resources/previews/036/594/092/non_2x/man-empty-avatar-photo-placeholder-for-social-networks-resumes-forums-and-dating-sites-male-and-female-no-photo-images-for-unfilled-user-profile-free-vector.jpg"
+            })
 
-    return jsonify(usuarios_con_foto)
-
+        print("DEBUG: usuarios encontrados:", len(usuarios_con_foto))
+        return jsonify(usuarios_con_foto)
+    except Exception as e:
+        print("Error en obtener_usuarios_de_clase:", e)
+        traceback.print_exc()
+        return jsonify({"error": "Error interno del servidor", "detail": str(e)}), 500
 
 # Registro de profesor con validaciones
 @app.route("/api/register/profesor", methods=["POST"])
@@ -294,6 +301,7 @@ def login():
     token = jwt.encode({
         "usuario_id": usuario["id"],
         "rol": usuario["rol"],
+        "nombre": usuario["nombre"],  # ← Agregado aquí
         "exp": datetime.now(timezone.utc) + timedelta(hours=36000)
     }, SECRET_KEY, algorithm="HS256")
 
@@ -311,6 +319,91 @@ def obtener_usuario(usuario_id):
         return jsonify({"status": "ok", "usuario": usuario})
     else:
         return jsonify({"error": "Usuario no encontrado"}), 404
+    
+@app.route("/api/usuarios/email/<email>", methods=["GET"])
+def obtener_usuario_por_email(email):
+    conn = conectar()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, nombre, email, rol FROM usuarios WHERE email = ?", (email,))
+    usuario = cursor.fetchone()
+    conn.close()
+    if usuario:
+        return jsonify({"usuario": {
+            "id": usuario[0],
+            "nombre": usuario[1],
+            "email": usuario[2],
+            "rol": usuario[3]
+        }})
+    else:
+        return jsonify({"error": "Usuario no encontrado"}), 404
+
+@app.route("/api/notificaciones/respond/<asignacion_id>", methods=["POST"])
+def responder_notificacion(asignacion_id):
+    """
+    Acciones:
+      - aceptar: une al usuario a la clase asociada y elimina la asignación (la notificación desaparece)
+      - rechazar: elimina la asignación (la notificación desaparece)
+    Body: { "action": "aceptar" | "rechazar" }
+    """
+    body = request.json or {}
+    action = body.get("action")
+    if action not in ("aceptar", "rechazar"):
+        return jsonify({"error": "Acción no válida"}), 400
+
+    try:
+        conn = conectar()
+        cursor = conn.cursor()
+
+        # Obtener la asignación: id (asignacion) -> notificacion_id, usuario_id
+        cursor.execute("SELECT notificacion_id, usuario_id FROM notificaciones_usuarios WHERE id = ?", (asignacion_id,))
+        asign = cursor.fetchone()
+        if not asign:
+            conn.close()
+            return jsonify({"error": "Asignación no encontrada"}), 404
+
+        noti_id, usuario_id = asign[0], asign[1]
+
+        if action == "aceptar":
+            # obtener clase asociada a la notificación
+            cursor.execute("SELECT clase_id FROM notificaciones WHERE id = ?", (noti_id,))
+            fila = cursor.fetchone()
+            if fila and fila[0]:
+                clase_id = fila[0]
+                try:
+                    # unirse_clase debe crear la relación en clases_usuarios
+                    unirse_clase(usuario_id, clase_id)
+                except Exception as e:
+                    # ignorar si ya estaba unido o similar, solo loguear
+                    print("Warning al unir usuario a clase:", e)
+
+        # En ambos casos (aceptar o rechazar) eliminamos la asignación para que no aparezca más
+        cursor.execute("DELETE FROM notificaciones_usuarios WHERE id = ?", (asignacion_id,))
+        conn.commit()
+        conn.close()
+
+        return jsonify({"status": "ok"})
+    except Exception as e:
+        print("Error en responder_notificacion:", e)
+        return jsonify({"error": "Error interno del servidor"}), 500
+
+
+@app.route("/api/notificaciones/asignacion/<asignacion_id>", methods=["DELETE"])
+def eliminar_asignacion(asignacion_id):
+    """
+    Elimina una asignación de notificación (borrar notificación para el usuario).
+    Usado para cerrar notificaciones normales o rechazar invitaciones (si se prefiere llamada directa).
+    """
+    try:
+        conn = conectar()
+        cursor = conn.cursor()
+
+        cursor.execute("DELETE FROM notificaciones_usuarios WHERE id = ?", (asignacion_id,))
+        conn.commit()
+        conn.close()
+        return jsonify({"status": "ok"})
+    except Exception as e:
+        print("Error al eliminar asignacion:", e)
+        return jsonify({"error": "Error interno del servidor"}), 500
 
 if __name__ == "__main__":
     app.run(debug=True)
