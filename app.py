@@ -1,19 +1,34 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from notificaciones import crear_tablas, crear_notificacion, asignar_a_usuario, marcar_vista, listar_por_usuario
-from clases import crear_clases, unirse_clase, clases_por_usuario
+from clases import crear_clases, eliminar_clase, dejar_clase, unirse_clase, clases_por_usuario
 from db import random_id, conectar
 from usuarios import obtener_usuario_por_id
 from login import comp_login, comp_reg_alum, comp_reg_prof
 from datetime import datetime, timedelta, timezone
+import os
+from dotenv import load_dotenv
 import traceback
 import jwt
+from flask_socketio import SocketIO
+from call_signaling import register_signaling
+from storage import register_storage
 
-SECRET_KEY = "A99GJFJKSLKJi129873@#$$%&&/()=?¿"
+load_dotenv()
+SECRET_KEY = os.getenv("SECRET_KEY", "A99GJFJKSLKJi129873@#$$%&&/()=?¿")
 
 app = Flask(__name__)
 CORS(app)
 crear_tablas()
+
+# Socket.IO (Flask integration)
+socketio = SocketIO(app, cors_allowed_origins='*')
+
+# Registrar los manejadores de señalización de llamadas
+register_signaling(socketio)
+
+# Registrar endpoints de storage (subida/descarga)
+register_storage(app)
 
 @app.route("/api/notificaciones/<usuario_id>", methods=["GET"])
 def obtener_notificaciones(usuario_id):
@@ -112,9 +127,27 @@ def unirse():
 
     if not all(k in body for k in ["usuario_id", "clase_id"]):
         return jsonify({"error": "Faltan campos obligatorios"}), 400
-
+    
     unirse_clase(body["usuario_id"], body["clase_id"])
     return jsonify({"status": "ok", "mensaje": "Usuario unido a la clase"})
+
+@app.route("/api/clases/abandonar", methods=["POST"])
+def abandonar_clase():
+    body = request.json
+    if not all(k in body for k in ["usuario_id", "clase_id"]):
+        return jsonify({"error": "Faltan campos obligatorios"}), 400
+
+    dejar_clase(body["usuario_id"], body["clase_id"])
+    return jsonify({"status": "ok", "mensaje": "Usuario ha abandonado la clase"})
+
+@app.route("/api/clases/eliminar", methods=["POST"])
+def eliminar_clase_api():
+    body = request.json
+    if not body or "clase_id" not in body:
+        return jsonify({"error": "Falta el campo clase_id"}), 400
+
+    eliminar_clase(body["clase_id"])
+    return jsonify({"status": "ok", "mensaje": "Clase eliminada correctamente"})
 
 @app.route("/api/clases/<usuario_id>", methods=["GET"])
 def obtener_clases(usuario_id):
@@ -262,11 +295,12 @@ def register_profesor():
     if not all(k in body for k in required):
         return jsonify({"error": "Faltan campos obligatorios"}), 400
 
-    try:
-        resultado = comp_reg_prof(body["nombre"], body["password"], body["email"])
-        return jsonify({"status": "ok", "usuario_id": resultado, "rol": "profesor"})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 400
+    # iniciamos el flujo de verificación que envía un código al email
+    from usuarios import iniciar_registro_con_verificacion
+    token = iniciar_registro_con_verificacion(body["nombre"], body["email"], body["password"], rol="profesor")
+    if not token:
+        return jsonify({"error": "No se pudo iniciar la verificación"}), 500
+    return jsonify({"status": "ok", "token": token}), 200
 
 
 # Registro de alumno con validaciones
@@ -277,11 +311,24 @@ def register_alumno():
     if not all(k in body for k in required):
         return jsonify({"error": "Faltan campos obligatorios"}), 400
 
-    resultado = comp_reg_alum(body["nombre"], body["password"], body["email"])
-    if resultado is None:
-        return jsonify({"error": "No se pudo registrar el usuario"}), 500
+    from usuarios import iniciar_registro_con_verificacion
+    token = iniciar_registro_con_verificacion(body["nombre"], body["email"], body["password"], rol="estudiante")
+    if not token:
+        return jsonify({"error": "No se pudo iniciar la verificación"}), 500
+    return jsonify({"status": "ok", "token": token}), 200
 
-    return jsonify({"status": "ok", "usuario_id": resultado, "rol": "estudiante"})
+
+@app.route('/api/register/confirm', methods=['POST'])
+def register_confirm():
+    body = request.json or {}
+    if not all(k in body for k in ('token', 'codigo')):
+        return jsonify({'error': 'Faltan campos obligatorios'}), 400
+
+    from usuarios import confirmar_registro_con_token
+    usuario_id = confirmar_registro_con_token(body['token'], body['codigo'])
+    if not usuario_id:
+        return jsonify({'error': 'Token inválido o código incorrecto/expirado'}), 400
+    return jsonify({'status': 'ok', 'usuario_id': usuario_id}), 200
 
 # Login con validaciones
 @app.route("/api/login", methods=["POST"])
@@ -405,5 +452,25 @@ def eliminar_asignacion(asignacion_id):
         print("Error al eliminar asignacion:", e)
         return jsonify({"error": "Error interno del servidor"}), 500
 
-if __name__ == "__main__":
-    app.run(debug=True)
+@socketio.on('connect')
+def handle_connect():
+    print('🔌 Cliente conectado')
+
+
+@socketio.on('chat_message')
+def handle_chat_message(data):
+    print(f'Mensaje recibido: {data}')
+    # Reenviamos el mensaje a todos los clientes conectados
+    # flask-socketio.server.emit no acepta broadcast kwarg en algunas versiones;
+    # llamar emit(event, data) enviará a todos en namespace global.
+    socketio.emit('chat_message', data)
+
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    print('❌ Cliente desconectado')
+
+
+if __name__ == '__main__':
+    # usamos eventlet/uWSGI/gunicorn en producción; para desarrollo socketio.run funciona bien
+    socketio.run(app, host='0.0.0.0', port=5000, debug=True)
