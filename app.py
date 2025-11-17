@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from notificaciones import crear_tablas, crear_notificacion, asignar_a_usuario, marcar_vista, listar_por_usuario
 from clases import crear_clases, eliminar_clase, dejar_clase, unirse_clase, clases_por_usuario
@@ -13,6 +13,10 @@ import jwt
 from flask_socketio import SocketIO
 from call_signaling import register_signaling
 from storage import register_storage
+import tempfile
+import os
+
+archivos_temporales = {}
 
 load_dotenv()
 SECRET_KEY = os.getenv("SECRET_KEY", "A99GJFJKSLKJi129873@#$$%&&/()=?¿")
@@ -46,6 +50,8 @@ def obtener_notificaciones(usuario_id):
         for r in data
     ]
     return jsonify(notis)
+
+
 
 @app.route("/api/notificaciones", methods=["POST"])
 def nueva_notificacion():
@@ -139,6 +145,30 @@ def abandonar_clase():
 
     dejar_clase(body["usuario_id"], body["clase_id"])
     return jsonify({"status": "ok", "mensaje": "Usuario ha abandonado la clase"})
+
+@app.route("/upload", methods=["POST"])
+def upload_file():
+    archivo = request.files["archivo"]
+    if not archivo:
+        return "No se recibió archivo", 400
+
+    # Guardar en carpeta temporal
+    tmp_dir = tempfile.gettempdir()
+    tmp_path = os.path.join(tmp_dir, archivo.filename)
+    archivo.save(tmp_path)
+
+    # Registrar ruta en memoria
+    archivos_temporales[archivo.filename] = tmp_path
+
+    return f"Archivo {archivo.filename} guardado temporalmente!"
+
+@app.route("/download/<nombre>", methods=["GET"])
+def download_file(nombre):
+    if nombre not in archivos_temporales:
+        return "Archivo no encontrado", 404
+
+    tmp_path = archivos_temporales[nombre]
+    return send_file(tmp_path, as_attachment=True)
 
 @app.route("/api/clases/eliminar", methods=["POST"])
 def eliminar_clase_api():
